@@ -2,7 +2,7 @@
 -- Config
 local EXT = "mdmc"
 local DIR = "mdmc/"
-local URL = "https://raw.githubusercontent.com/SollyBunny/midi2mccc/mdmc/"
+local URL = "https://raw.githubusercontent.com/SollyBunny/midi2mccc/main/mdmc/"
 local NAME = "midi2mccc"
 
 function speakerFindPeripheral()
@@ -11,15 +11,22 @@ end
 
 local prompt = {
 	colors.blue, "exit", colors.white, ": Exit\n",
+	colors.blue, "help", colors.white, ": List keybinds for player\n",
 	colors.blue, "list", colors.white, ": List downloaded songs\n",
 	colors.blue, "repo", colors.white, ": List songs on repo\n",
-	colors.blue, "all", colors.white, ": Play all songs (shuffled)\n",
-	"<", colors.blue, "song name", colors.white, ", ", colors.blue, "...", colors.white, ">: Play songs\n",
+	colors.blue, "all", colors.white, ": Play all downloaded songs (shuffled)\n",
+	"<", colors.blue, "song name", colors.white, ", ", colors.blue, "...", colors.white, ">: Play songs (downloads from repo)\n",
 	colors.gray, "At any time hold ctrl+t to exit the program"
 }
 
 local intro = {
 	colors.blue, "MIDI Player for CC:Tweaked"
+}
+
+local help = {
+	colors.blue, "Up / Down Arrow", colors.white, ": Change volume (holdable)\n",
+	colors.blue, "Enter / Space", colors.white, ": Toggle pause\n",
+	colors.blue, "Backspace", colors.white, ": Skip song"
 }
 
 -- Utils
@@ -117,7 +124,9 @@ local function progressBar(filename, time, total, paused)
 	local __, y = term.getCursorPos()
 	term.setCursorPos(1, y - 2)
 	local colorDefault = term.getTextColor()
-	if paused or speakerConnected == false then
+	if speakerConnected == false then
+		printColor(colors.red, "Error:   ", colors.white, filename)
+	elseif paused then
 		printColor(colors.orange, "Paused:  ", colors.white, filename)
 	else
 		printColor(colors.blue, "Playing: ", colors.white, filename)
@@ -229,8 +238,10 @@ local function playMdmc(filename)
 							end
 						else
 							if key == keys.space or key == keys.enter then
-								paused = not paused
-								progressBar(filename, math.floor(time / 1000), duration, paused)
+								if speakerConnected == true then
+									paused = not paused
+									progressBar(filename, math.floor(time / 1000), duration, paused)
+								end
 							elseif key == keys.backspace then
 								file.close()
 								progressBarRemove()
@@ -329,11 +340,13 @@ local function mainList()
 end
 
 local function mainRepo()
-	local data = httpGet(URL .. "liststatic")
+	local url = URL .. "liststatic"
+	local data = httpGet(url)
 	if data == nil then
-		printError("Downloading repo failed")
+		printError("Downloading repo failed at " .. url)
 		return
 	end
+	data = string.gsub(data, "\n", ";")
 	local pattern = "%." .. EXT .. "$"
 	local undownloaded = {}
 	printColor(colors.blue, "Songs in repo:")
@@ -361,7 +374,12 @@ local function mainRepo()
 	if songs == false then
 		printColor(colors.orange, "No songs in repo")
 	end
-	printColor(colors.gray, "The repo is at " .. URL)
+	local width, _ = term.getSize()
+	if #URL < width then
+		printColor(colors.gray, "The repo is at\n", URL)
+	else
+		printColor(colors.gray, "The repo is at ", URL)
+	end
 	anyKeyToContinue()
 end
 
@@ -373,6 +391,12 @@ local function mainCmd(msg)
 		mainRepo()
 	elseif msgl == "all" or msgl == "playall" then
 		mainPlayAll()
+	elseif msgl == "help" or msgl == "?" or msgl == "keys" or msgl == "keybinds" then
+		printColor(unpack(help))
+		anyKeyToContinue()
+	elseif msgl == "cls" or msgl == "clear" then
+		term.clear()
+		term.setCursorPos(1, 1)
 	else
 		mainPlay(msg)
 	end
@@ -382,11 +406,13 @@ local mainCmdList = {
 	"list", "ls",
 	"repo",
 	"all", "playall",
+	"keys", "help", "keybinds",
+	"cls", "clear",
 	"exit"
 }
 function mainAutocomplete(msg)
 	if #msg < 1 then return {} end
-	local msgl = string.lower(msg)
+	local msgl = trim(string.lower(msg))
 	local matches = {}
 	for _, cmd in ipairs(mainCmdList) do
         local startIndex, endIndex = string.find(cmd, msgl)
@@ -418,8 +444,8 @@ function main()
 			term.setTextColor(colors.yellow)
 			write(NAME .. "> ")
 			term.setTextColor(colors.white)
-			msg = read(nil, history, mainAutocomplete)
-			if msg ~= nil and #msg > 0 then break end
+			msg = trim(read(nil, history, mainAutocomplete))
+			if #msg > 0 then break end
 		end
 		print()
 		if string.lower(msg) == "exit" then return end
