@@ -1,0 +1,8 @@
+// ZISS SCRIPT
+module.exports.handle = (req, res) => {
+	let files = fs.readdirSync(__dirname);
+		.filter(i => i.endsWith(".mdmc"))
+		.join(";")
+	;
+	res.end(files);
+};
