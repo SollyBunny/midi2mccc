@@ -9,6 +9,8 @@ MIDI to Minecraft CC: Tweaked
 3. Run `wget run https://raw.githubusercontent.com/SollyBunny/midi2mccc/player.lua`
 4. Enjoy
 
+*⚠️ Has crashed servers (once). Per the [LICENSE](./LICENSE), use at your own risk ⚠️*
+
 ## Adding custom songs
 
 1. Fork or otherwise host this repo
@@ -16,3 +18,4 @@ MIDI to Minecraft CC: Tweaked
 2. Run "./allmidi2mdmc"
 3. Update `URL` in `player.lua`
 
+*NOTE: some songs work better than others*

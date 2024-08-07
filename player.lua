@@ -15,7 +15,7 @@ local prompt = {
 	colors.blue, "repo", colors.white, ": List songs on repo\n",
 	colors.blue, "all", colors.white, ": Play all songs (shuffled)\n",
 	"<", colors.blue, "song name", colors.white, ", ", colors.blue, "...", colors.white, ">: Play songs\n",
-	colors.gray, "At any time hold ctrl+r to restart"
+	colors.gray, "At any time hold ctrl+t to exit the program"
 }
 
 local intro = {
@@ -100,7 +100,7 @@ local volume = 1.0
 local speaker, speakerConnected
 local function speakerFind()
 	speakerConnected = false
-	speaker = speakerFindPeripheral
+	speaker = speakerFindPeripheral()
 	if speaker == nil then
 		speaker = "Cannot find speaker!"
 		return
@@ -242,14 +242,14 @@ local function playMdmc(filename)
 				end
 				if paused == false and os.clock() >= endTime then break end
 			end
-			if speakerConnected == false then
-				progressBar(filename, math.floor(time / 1000), duration, paused)
-				while speakerConnected == false do
-					os.pullEvent("peripheral")
-					speakerFind()
-				end
-				progressBar(filename, math.floor(time / 1000), duration, paused)
+		end
+		if speakerConnected == false then
+			progressBar(filename, math.floor(time / 1000), duration, paused)
+			while speakerConnected == false do
+				os.pullEvent("peripheral")
+				speakerFind()
 			end
+			progressBar(filename, math.floor(time / 1000), duration, paused)
 		end
 		if instrument > 1 then
 			speaker.playNote(instruments[instrument], volume, note)
@@ -329,7 +329,7 @@ local function mainList()
 end
 
 local function mainRepo()
-	local data = httpGet(URL .. "list")
+	local data = httpGet(URL .. "liststatic")
 	if data == nil then
 		printError("Downloading repo failed")
 		return
