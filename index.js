@@ -87,11 +87,24 @@ function instrument2noteblock(instrument) {
 }
 
 function midi2mccc(midiParsed) {
+	// get average duration and correct for tick speed (0.05s / tick)
+	let deltaAvg = 0;
+	let deltaCnt = 0;
+	for (const event of midiParsed) {
+		if (event.delta <= 0) continue;
+		deltaAvg += event.delta;
+		deltaCnt++;
+	}
+	deltaAvg /= deltaCnt;
+	// nearest 0.05s
+	const deltaAvgRounded = Math.ceil(deltaAvg / 1000 * 20) / 20 * 1000; 
+	const deltaMul = deltaAvgRounded / deltaAvg;
 	// convert instruments to noteblock types
 	// get duration
 	const instruments = {};
 	let duration = 0;
 	for (const event of midiParsed) {
+		event.delta *= deltaMul;
 		duration += event.delta;
 		if (instruments[event.instrument]) continue;
 		instruments[event.instrument] = NOTEBLOCKSOUNDS.indexOf(instrument2noteblock(event.instrument));
@@ -109,7 +122,6 @@ function midi2mccc(midiParsed) {
 	buffer[i++] = "MDMC".charCodeAt(1);
 	buffer[i++] = "MDMC".charCodeAt(2);
 	buffer[i++] = "MDMC".charCodeAt(3);
-	console.error(duration)
 	buffer[i++] = duration >> 24;
 	buffer[i++] = (duration >> 16) & 0xFF;
 	buffer[i++] = (duration >> 8) & 0xFF;
@@ -124,13 +136,14 @@ function midi2mccc(midiParsed) {
 		buffer[i++] = note;
 	}
 	buffer[i++] = 0; buffer[i++] = 0; buffer[i++] = 0; buffer[i++] = 0;
+	console.error(`Duration: ${duration} Speed: ${1 / deltaMul}x`);
 	return buffer;
 }
 
 const filein = process.argv[2];
 const fileout = process.argv[3];
 if (!filein || !fileout) process.exit("Usage: node index.js <midi-in-file> <mdmc-out-file>");
-
+console.error(`${filein} -> ${fileout}`);
 const midiData = fs.readFileSync(filein);
 const midiParsed = midiParse(midiData);
 const midiBuffer = midi2mccc(midiParsed);
