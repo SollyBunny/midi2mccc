@@ -6,7 +6,7 @@ MIDI to Minecraft CC: Tweaked
 
 1. Place an advanced computer (normal one also works)
 2. Connect a speaker to it (place it beside the computer)
-3. Run `wget run https://raw.githubusercontent.com/SollyBunny/midi2mccc/player.lua`
+3. Run `wget run https://raw.githubusercontent.com/SollyBunny/midi2mccc/main/player.lua`
 4. Enjoy
 
 *⚠️ Has crashed servers (once). Per the [LICENSE](./LICENSE), use at your own risk ⚠️*
